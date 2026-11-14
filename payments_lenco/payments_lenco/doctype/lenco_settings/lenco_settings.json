@@ -1,0 +1,75 @@
+{
+ "doctype": "DocType",
+ "name": "Lenco Settings",
+ "module": "Payments Lenco",
+ "custom": 0,
+ "issingle": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "environment",
+  "api_token",
+  "max_amount",
+  "bearer",
+  "webhook_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "label": "Environment",
+   "options": "sandbox\nlive",
+   "default": "sandbox",
+   "reqd": 1
+  },
+  {
+   "fieldname": "api_token",
+   "fieldtype": "Password",
+   "label": "API token",
+   "description": "Lenco API v2 bearer token. Also keys the webhook signature (HMAC-SHA512 with the token's SHA-256 hex digest)."
+  },
+  {
+   "fieldname": "max_amount",
+   "fieldtype": "Currency",
+   "label": "Maximum per transaction (ZMW)",
+   "default": "10000",
+   "description": "Mobile money ceiling. Larger amounts must be paid by bank transfer."
+  },
+  {
+   "fieldname": "bearer",
+   "fieldtype": "Select",
+   "label": "Fee bearer",
+   "options": "merchant\ncustomer",
+   "default": "merchant",
+   "description": "Sent explicitly: Lenco has been seen defaulting to customer, which charges the buyer more than the total."
+  },
+  {
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL",
+   "read_only": 1,
+   "is_virtual": 1,
+   "description": "Register this URL in the Lenco dashboard."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "creation": "2026-11-14 00:00:00.000000",
+ "modified": "2026-11-14 00:00:00.000000",
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}
