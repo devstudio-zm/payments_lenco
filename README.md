@@ -35,6 +35,8 @@ bench --site <site> install-app payments_lenco
 
 ## Use it from your checkout
 
+Accepted Zambian mobile prefixes are MTN **096/076/056**, Airtel **097/077/057**, and Zamtel **095/075/055**.
+
 Lenco is a push flow, so there is no hosted payment page. Your app creates the Payment Request and starts the collection:
 
 ```python

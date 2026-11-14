@@ -15,7 +15,12 @@ import requests
 from frappe import _
 
 BASE = {"live": "https://api.lenco.co/access/v2", "sandbox": "https://sandbox.lenco.co/access/v2"}
-OPERATOR_PREFIXES = {"mtn": ("096", "076"), "airtel": ("097", "077"), "zamtel": ("095", "075")}
+# Zambian mobile prefixes (local 0XXXXXXXXX form).
+OPERATOR_PREFIXES = {
+	"mtn": ("096", "076", "056"),
+	"airtel": ("097", "077", "057"),
+	"zamtel": ("095", "075", "055"),
+}
 OPERATOR_LABELS = {"mtn": "MTN Mobile Money", "airtel": "Airtel Money", "zamtel": "Zamtel Kwacha"}
 
 
@@ -88,7 +93,9 @@ class Lenco:
 
 def normalize_phone(phone: str) -> str:
 	"""Local 0XXXXXXXXX form Lenco expects, or "" if it is not a Zambian mobile number."""
-	digits = re.sub(r"\D+", "", phone or "")
+	if not isinstance(phone, str) or re.search(r"[^\d\s+().-]", phone):
+		return ""  # letters or other symbols: a typo, not a number to repair
+	digits = re.sub(r"\D+", "", phone)
 	if digits.startswith("260"):
 		digits = digits[3:]
 	digits = digits.lstrip("0")
@@ -96,6 +103,11 @@ def normalize_phone(phone: str) -> str:
 		return ""
 	local = "0" + digits
 	return local if detect_operator(local) else ""
+
+
+def international(local_phone: str) -> str:
+	"""+260XXXXXXXXX for a number normalize_phone() accepted."""
+	return "+260" + local_phone[1:] if local_phone.startswith("0") and len(local_phone) == 10 else local_phone
 
 
 def detect_operator(local_phone: str) -> str:

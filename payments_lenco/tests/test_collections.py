@@ -17,7 +17,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 
 from payments_lenco import collections
-from payments_lenco.client import Lenco, normalize_phone
+from payments_lenco.client import Lenco, detect_operator, international, normalize_phone
 from payments_lenco.setup import gateway_account
 
 TOKEN = "test-token-not-real"
@@ -73,10 +73,52 @@ class TestLenco(IntegrationTestCase):
 		return frappe.get_all("Payment Entry Reference", filters={"reference_name": pr.reference_name, "docstatus": 1})
 
 	def test_phone_numbers(self):
-		self.assertEqual(normalize_phone("+260 97 123 4567"), "0971234567")
-		self.assertEqual(normalize_phone("0761234567"), "0761234567")
-		self.assertEqual(normalize_phone("0211234567"), "")
-		self.assertEqual(normalize_phone("12345"), "")
+		prefixes = (
+			("096", "mtn"), ("076", "mtn"), ("056", "mtn"),
+			("097", "airtel"), ("077", "airtel"), ("057", "airtel"),
+			("095", "zamtel"), ("075", "zamtel"), ("055", "zamtel"),
+		)
+		for prefix, operator in prefixes:
+			local = prefix + "1234567"
+			national = local[1:]
+			forms = (
+				"+260" + national,
+				f"+260 {national[:2]} {national[2:5]} {national[5:]}",
+				f"+260-{national[:2]}-{national[2:5]}-{national[5:]}",
+				f"(+260) ({national[:2]}) {national[2:5]}-{national[5:]}",
+				"260" + national,
+				f"260 {national[:2]} {national[2:5]} {national[5:]}",
+				f"260-{national[:2]}-{national[2:5]}-{national[5:]}",
+				f"(260) ({national[:2]}) {national[2:5]}-{national[5:]}",
+				local,
+				f"{prefix} 123 4567",
+				f"{prefix}-123-4567",
+				f"({prefix}) 123-4567",
+				national,
+				f"{national[:2]} {national[2:5]} {national[5:]}",
+				f"{national[:2]}-{national[2:5]}-{national[5:]}",
+				f"({national[:2]}) {national[2:5]}-{national[5:]}",
+			)
+			for phone in forms:
+				with self.subTest(prefix=prefix, operator=operator, phone=phone):
+					normalized = normalize_phone(phone)
+					self.assertEqual(normalized, local)
+					self.assertEqual(detect_operator(normalized), operator)
+					self.assertEqual(international(normalized), "+260" + national)
+
+		invalid = (
+			"094", "098", "021", "0211234567",
+			"0941234567", "0981234567", "+260 94 123 4567", "260981234567",
+			"", " ", "() -", "abc", "phone", "097abc1234567", "+26097abc1234567",
+			"12345", "097123456", "09712345678", "97123456", "9712345678",
+			"+260 97 123 456", "+260 97 123 45678", "26097123456", "2609712345678",
+		)
+		for phone in invalid:
+			with self.subTest(invalid_phone=phone):
+				normalized = normalize_phone(phone)
+				self.assertEqual(normalized, "")
+				self.assertEqual(detect_operator(normalized), "")
+				self.assertEqual(international(normalized), "")
 
 	def test_signature_is_over_the_raw_body(self):
 		raw = b'{"event":"collection.successful"}'
